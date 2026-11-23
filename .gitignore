@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Data: too big for GitHub; download steps are in the README
+data/raw/*
+!data/raw/.gitkeep
+data/*.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor
+.vscode/
