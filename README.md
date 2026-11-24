@@ -15,7 +15,14 @@ pip install -r requirements.txt
 ```
 
 ## Data
-Datasets are not stored in this repo. Download instructions are added per stage.
+
+### Stage 1: Credit Card Fraud
+1. Download from Kaggle: "Credit Card Fraud Detection" (mlg-ulb)
+2. Place the file at `data/raw/creditcard.csv`
+3. Load it into SQLite:
+   ```bash
+   python -m src.ingest configs/creditcard.yaml
+   ```
 
 ## Log: what broke / what changed
 (Filled in as the project progresses.)
