@@ -66,5 +66,19 @@ def main():
     summarize(df_db, config["target"], config["positive_label"])
 
 
-if __name__ == "__main__":
-    main()
+def run(config):
+    df = load_csv(config["raw_path"], config["target"])
+    write_to_sqlite(df, config["db_path"], config["table"])
+
+    df_db = read_from_sqlite(config["db_path"], config["table"])
+    assert df_db.shape == df.shape, "Row/column count changed during the round trip"
+
+    print(f"Loaded '{config['name']}' into {config['db_path']} (table: {config['table']})")
+    summarize(df_db, config["target"], config["positive_label"])
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Load a raw CSV into SQLite.")
+    parser.add_argument("config", help="Path to a YAML config file")
+    args = parser.parse_args()
+    run(load_config(args.config))

@@ -53,5 +53,33 @@ def main():
     print(f"\nSaved metrics to {out_dir / 'baseline_metrics.csv'}")
 
 
-if __name__ == "__main__":
-    main()
+def run(config):
+    random_state = config.get("random_state", 42)
+
+    df = load_dataset(config)
+    X, y = split_features_target(df, config["target"], config["positive_label"])
+    X_train, X_test, y_train, y_test = train_test(
+        X, y, config.get("test_size", 0.2), random_state
+    )
+    print(f"Train: {len(X_train):,} rows ({y_train.sum()} failures)   "
+          f"Test: {len(X_test):,} rows ({y_test.sum()} failures)")
+
+    results = {}
+    for name, model in build_models(random_state).items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        y_score = model.predict_proba(X_test)[:, 1]
+        results[name] = evaluate(y_test, y_pred, y_score)
+        print_report(name, results[name])
+
+    out_dir = Path("reports") / config["name"]
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(results).T.round(4).to_csv(out_dir / "baseline_metrics.csv")
+    print(f"\nSaved metrics to {out_dir / 'baseline_metrics.csv'}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Train and evaluate baseline models.")
+    parser.add_argument("config", help="Path to a YAML config file")
+    args = parser.parse_args()
+    run(load_config(args.config))

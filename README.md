@@ -25,14 +25,16 @@ pip install -r requirements.txt
    ```
 
 ## How to run
-Every step takes a config file, so the same commands work for any dataset.
+Run the whole pipeline with one command:
 ```bash
-python -m src.ingest configs/creditcard.yaml          # CSV -> SQLite
-python -m src.explore configs/creditcard.yaml         # EDA reports in reports/creditcard/
-python -m src.train_baseline configs/creditcard.yaml  # baseline vs logistic regression
-python -m src.compare_models configs/creditcard.yaml  # 5-fold CV model comparison
-python -m src.final_evaluation configs/creditcard.yaml # tune cut-off on CV, then one-time test evaluation
+python main.py --config configs/creditcard.yaml
 ```
+Or only some steps (they always run in order):
+```bash
+python main.py --config configs/creditcard.yaml --steps ingest explore
+```
+Steps: `ingest` (CSV → SQLite), `explore` (EDA), `baseline`, `compare` (5-fold CV), `final` (threshold tuning + one-time test evaluation).
+Each step can also be run on its own, e.g. `python -m src.compare_models configs/creditcard.yaml`.
 
 ## Results
 
@@ -95,3 +97,7 @@ Cut-off chosen by maximising F1 on out-of-fold training predictions (CV: precisi
 - Selection rule (max F1) fixed before looking at test results.
 - Tuned cut-off 0.40 caught 3 more frauds than the default 0.5 for 1 extra false alarm.
 - Test recall (0.76) slightly below CV recall (0.81), within the CV spread (±0.07) → CV estimate was reliable.
+
+### Refactor: single entry point (Module 5)
+- Each step exposes `run(config)`; `main.py` runs them in order from one config.
+- Verified the refactor didn't change behaviour: re-running gave identical results.
