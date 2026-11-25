@@ -48,24 +48,6 @@ def summarize(df, target, positive_label):
     print(f"Failure rate: {failure_rate:.4%}")
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Load a raw CSV into SQLite.")
-    parser.add_argument("config", help="Path to a YAML config file")
-    args = parser.parse_args()
-
-    config = load_config(args.config)
-
-    df = load_csv(config["raw_path"], config["target"])
-    write_to_sqlite(df, config["db_path"], config["table"])
-
-    # Round-trip check: read it back and make sure nothing was lost
-    df_db = read_from_sqlite(config["db_path"], config["table"])
-    assert df_db.shape == df.shape, "Row/column count changed during the round trip"
-
-    print(f"Loaded '{config['name']}' into {config['db_path']} (table: {config['table']})")
-    summarize(df_db, config["target"], config["positive_label"])
-
-
 def run(config):
     df = load_csv(config["raw_path"], config["target"])
     write_to_sqlite(df, config["db_path"], config["table"])
@@ -82,3 +64,6 @@ def main():
     parser.add_argument("config", help="Path to a YAML config file")
     args = parser.parse_args()
     run(load_config(args.config))
+
+if __name__ == "__main__":
+    main()

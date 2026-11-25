@@ -1,0 +1,6 @@
+model,precision_mean,precision_std,recall_mean,recall_std,f1_mean,f1_std,pr_auc_mean,pr_auc_std,seconds
+logreg,0.151,0.0875,0.1926,0.1465,0.1654,0.109,0.1583,0.0742,0.3552
+logreg_balanced,0.1277,0.063,0.2287,0.124,0.1616,0.0802,0.1634,0.0825,0.3791
+logreg_smote,0.1333,0.0638,0.2287,0.124,0.166,0.081,0.1571,0.0785,0.4959
+random_forest,0.0,0.0,0.0,0.0,0.0,0.0,0.171,0.0468,1.178
+gradient_boosting,0.0,0.0,0.0,0.0,0.0,0.0,0.2163,0.0649,11.4995

@@ -24,6 +24,15 @@ pip install -r requirements.txt
    python -m src.ingest configs/creditcard.yaml
    ```
 
+### Stage 2: SECOM (semiconductor manufacturing)
+1. Download from the UCI Machine Learning Repository ("SECOM")
+2. Place `secom.data` and `secom_labels.data` in `data/raw/`
+3. Convert to one CSV, then run the pipeline:
+   ```bash
+   python scripts/convert_secom.py
+   python main.py --config configs/secom.yaml
+   ```
+
 ## How to run
 Run the whole pipeline with one command:
 ```bash
@@ -69,6 +78,16 @@ Cut-off chosen by maximising F1 on out-of-fold training predictions (CV: precisi
 
 ![Precision-recall curve](reports/creditcard/pr_curve.png)
 
+### Stage 2: SECOM, first pass (no cleaning or feature selection yet)
+1,567 production runs, 590 sensors, 104 failures (6.6%). Test set: 314 runs, 21 failures.
+
+| Model | Cut-off | Precision | Recall | F1 | PR-AUC | Caught | False alarms |
+|---|---|---|---|---|---|---|---|
+| Gradient boosting | 0.5 (default) | 0.00 | 0.00 | 0.00 | 0.17 | 0 / 21 | 0 |
+| Gradient boosting | 0.002 (tuned on CV) | 0.29 | 0.38 | 0.33 | 0.17 | 8 / 21 | 20 |
+
+Random-guess PR-AUC ≈ 0.067. Best CV PR-AUC: gradient boosting 0.22, random forest 0.17, logistic regression ~0.16.
+
 ## Log: what broke / what changed
 
 ### Credit Card: exploration (Module 2)
@@ -101,3 +120,20 @@ Cut-off chosen by maximising F1 on out-of-fold training predictions (CV: precisi
 ### Refactor: single entry point (Module 5)
 - Each step exposes `run(config)`; `main.py` runs them in order from one config.
 - Verified the refactor didn't change behaviour: re-running gave identical results.
+
+### Switching to SECOM (Module 6): what broke
+1. **Data format:** SECOM ships as two headerless, space-separated files (sensors; labels + timestamps).
+   → `scripts/convert_secom.py` combines them into one CSV with named columns; `ingest.py` stays generic.
+2. **Text column:** `timestamp` reached the models → `could not convert string to float`.
+   → `drop_columns` in the config keeps non-feature columns out of X (timestamp kept for time-based splitting).
+3. **Missing values:** logistic regression crashed on NaN (538 of 592 columns have gaps; some sensors 91% empty).
+   → Median imputer added inside the logistic regression pipelines (fit on training folds only).
+   Random forest and gradient boosting handle NaN natively.
+4. **Silent failure:** random forest and gradient boosting predicted zero failures at the 0.5 cut-off (recall 0),
+   yet had the best PR-AUC → threshold tuning is required on this data, not optional.
+5. **Best model differs by dataset:** gradient boosting won on SECOM (CV PR-AUC 0.22) after losing on credit card.
+   → `model` is set per config, chosen by CV score.
+6. **Squashed probabilities:** the useful cut-off was 0.002. Likely overfitting: 590 features, 83 training failures.
+   Ranking still beat random (PR-AUC 0.17 vs 0.067). Feature reduction is next.
+- EDA: strongest single-sensor effect 0.62 (vs 7.9 on credit card): signal is weak and spread across many sensors.
+  Some top-ranked sensors were 91% missing, so their effect scores are unreliable.

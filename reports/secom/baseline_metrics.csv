@@ -1,0 +1,3 @@
+,accuracy,precision,recall,f1,pr_auc,tp,fp,fn,tn
+always_normal,0.9331,0.0,0.0,0.0,0.0669,0.0,0.0,21.0,293.0
+logistic_regression,0.879,0.16,0.1905,0.1739,0.1206,4.0,21.0,17.0,272.0

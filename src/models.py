@@ -3,7 +3,7 @@ from imblearn.pipeline import Pipeline
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-
+from sklearn.impute import SimpleImputer
 
 def build_candidates(random_state=42):
     """All the models we compare. Each one is a full pipeline, so preprocessing
@@ -11,17 +11,20 @@ def build_candidates(random_state=42):
     return {
         # Module 3 baseline, for comparison
         "logreg": Pipeline([
+            ("impute", SimpleImputer(strategy="median")),
             ("scale", StandardScaler()),
             ("model", LogisticRegression(max_iter=1000, random_state=random_state)),
         ]),
         # Fix 1: make each fraud count more during training
         "logreg_balanced": Pipeline([
+            ("impute", SimpleImputer(strategy="median")),
             ("scale", StandardScaler()),
             ("model", LogisticRegression(
                 max_iter=1000, class_weight="balanced", random_state=random_state)),
         ]),
         # Fix 2: create synthetic frauds (training folds only)
         "logreg_smote": Pipeline([
+            ("impute", SimpleImputer(strategy="median")),
             ("scale", StandardScaler()),
             ("smote", SMOTE(random_state=random_state)),
             ("model", LogisticRegression(max_iter=1000, random_state=random_state)),

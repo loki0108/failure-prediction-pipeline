@@ -58,35 +58,6 @@ def plot_distributions(df, target, positive_label, columns, out_path):
     plt.close(fig)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Explore a dataset stored in SQLite.")
-    parser.add_argument("config", help="Path to a YAML config file")
-    args = parser.parse_args()
-
-    config = load_config(args.config)
-    target, positive_label = config["target"], config["positive_label"]
-
-    df = read_from_sqlite(config["db_path"], config["table"])
-    out_dir = Path("reports") / config["name"]
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    print("=== Overview ===")
-    overview(df, target, positive_label)
-
-    print("\n=== Missing values ===")
-    missing = missing_report(df)
-    missing.to_csv(out_dir / "missing.csv", header=["missing_fraction"])
-
-    print("\n=== Features that best separate failures from normal ===")
-    separation = feature_separation(df, target, positive_label)
-    print(separation.head(10).round(3).to_string())
-    separation.to_csv(out_dir / "feature_separation.csv")
-
-    top_features = separation.index[:4].tolist()
-    plot_distributions(df, target, positive_label, top_features, out_dir / "top_features.png")
-    print(f"\nSaved reports to {out_dir}/")
-
-
 def run(config):
     target, positive_label = config["target"], config["positive_label"]
 
@@ -116,3 +87,6 @@ def main():
     parser.add_argument("config", help="Path to a YAML config file")
     args = parser.parse_args()
     run(load_config(args.config))
+
+if __name__ == "__main__":
+    main()

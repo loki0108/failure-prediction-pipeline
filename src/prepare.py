@@ -12,9 +12,10 @@ def load_dataset(config):
     return df
 
 
-def split_features_target(df, target, positive_label):
-    """Separate inputs (X) from the label (y), with y as 1 = failure, 0 = normal."""
-    X = df.drop(columns=[target])
+def split_features_target(df, target, positive_label, drop_columns=None):
+    """Separate inputs (X) from the label (y), with y as 1 = failure, 0 = normal.
+    drop_columns: non-feature columns (e.g. timestamps) to keep out of X."""
+    X = df.drop(columns=[target] + list(drop_columns or []))
     y = (df[target] == positive_label).astype(int)
     return X, y
 

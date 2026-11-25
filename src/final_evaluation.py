@@ -67,62 +67,13 @@ def plot_pr_curve(y_true, y_score, chosen, out_path):
     plt.close(fig)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Tune the threshold, then evaluate once on the test set.")
-    parser.add_argument("config", help="Path to a YAML config file")
-    args = parser.parse_args()
-
-    config = load_config(args.config)
-    random_state = config.get("random_state", 42)
-    model_name = config.get("model", "random_forest")
-    min_recall = config.get("min_recall")
-
-    df = load_dataset(config)
-    X, y = split_features_target(df, config["target"], config["positive_label"])
-    X_train, X_test, y_train, y_test = train_test(
-        X, y, config.get("test_size", 0.2), random_state
-    )
-    model = build_candidates(random_state)[model_name]
-    out_dir = Path("reports") / config["name"]
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # ---- Part 1: choose the cut-off using the TRAINING set only ----
-    cv = StratifiedKFold(n_splits=config.get("cv_folds", 5), shuffle=True, random_state=random_state)
-    oof_score = cross_val_predict(model, X_train, y_train, cv=cv, method="predict_proba")[:, 1]
-
-    print(f"\n=== Cut-off trade-off for {model_name} (out-of-fold, training set) ===")
-    print(tradeoff_table(y_train.values, oof_score).round(3).to_string(index=False))
-
-    chosen = choose_threshold(y_train.values, oof_score, min_recall)
-    threshold, cv_precision, cv_recall = chosen
-    rule = "max F1" if min_recall is None else f"recall >= {min_recall}"
-    print(f"\nChosen cut-off ({rule}): {threshold:.3f}  "
-          f"-> CV precision {cv_precision:.3f}, CV recall {cv_recall:.3f}")
-    plot_pr_curve(y_train.values, oof_score, chosen, out_dir / "pr_curve.png")
-
-    # ---- Part 2: unlock the test set, ONCE ----
-    model.fit(X_train, y_train)
-    test_score = model.predict_proba(X_test)[:, 1]
-
-    results = {
-        "default_0.5": evaluate(y_test, (test_score >= 0.5).astype(int), test_score),
-        f"tuned_{threshold:.2f}": evaluate(y_test, (test_score >= threshold).astype(int), test_score),
-    }
-    print("\n=== FINAL TEST SET RESULTS ===")
-    for name, metrics in results.items():
-        print_report(f"{model_name} @ {name}", metrics)
-
-    pd.DataFrame(results).T.round(4).to_csv(out_dir / "final_metrics.csv")
-    print(f"\nSaved {out_dir / 'final_metrics.csv'} and {out_dir / 'pr_curve.png'}")
-
-
 def run(config):
     random_state = config.get("random_state", 42)
     model_name = config.get("model", "random_forest")
     min_recall = config.get("min_recall")
 
     df = load_dataset(config)
-    X, y = split_features_target(df, config["target"], config["positive_label"])
+    X, y = split_features_target(df, config["target"], config["positive_label"], config.get("drop_columns"))
     X_train, X_test, y_train, y_test = train_test(
         X, y, config.get("test_size", 0.2), random_state
     )
@@ -150,7 +101,7 @@ def run(config):
 
     results = {
         "default_0.5": evaluate(y_test, (test_score >= 0.5).astype(int), test_score),
-        f"tuned_{threshold:.2f}": evaluate(y_test, (test_score >= threshold).astype(int), test_score),
+        f"tuned_{threshold:.3f}": evaluate(y_test, (test_score >= threshold).astype(int), test_score),
     }
     print("\n=== FINAL TEST SET RESULTS ===")
     for name, metrics in results.items():
@@ -165,3 +116,6 @@ def main():
     parser.add_argument("config", help="Path to a YAML config file")
     args = parser.parse_args()
     run(load_config(args.config))
+
+if __name__ == "__main__":
+    main()
