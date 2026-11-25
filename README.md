@@ -137,3 +137,12 @@ Random-guess PR-AUC ≈ 0.067. Best CV PR-AUC: gradient boosting 0.22, random fo
    Ranking still beat random (PR-AUC 0.17 vs 0.067). Feature reduction is next.
 - EDA: strongest single-sensor effect 0.62 (vs 7.9 on credit card): signal is weak and spread across many sensors.
   Some top-ranked sensors were 91% missing, so their effect scores are unreliable.
+
+  ### SECOM: cleaning + time-based split (Module 7)
+- `SensorCleaner` (inside every pipeline, fit on training folds only) drops sensors >50% missing,
+  constant sensors, and one of each pair correlated >0.95: 590 → 271 sensors.
+- Cleaning barely changed CV performance (gradient boosting PR-AUC 0.22 → 0.23); the useful cut-off stayed ~0.001.
+- Switched to a time-based split (train on earliest 80% of runs, test on latest 20%).
+  Shuffled CV estimated PR-AUC 0.23, but the future test set gave 0.076 (random ≈ 0.054): 3 of 17 failures caught, 40 false alarms.
+  → Likely process drift; shuffled CV is optimistic because it mixes later runs into training.
+  Next: time-aware CV for model selection.

@@ -9,3 +9,7 @@ random_state: 42
 model: gradient_boosting
 min_recall: null
 drop_columns: [timestamp]   # not a feature; kept in the data for time-based splitting later
+time_column: timestamp
+cleaning:
+  max_missing: 0.5       # drop sensors more than 50% empty
+  corr_threshold: 0.95   # drop one of each pair correlating above 0.95

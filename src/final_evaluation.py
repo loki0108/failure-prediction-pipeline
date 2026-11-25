@@ -12,7 +12,7 @@ from sklearn.metrics import precision_recall_curve
 from src.config import load_config
 from src.evaluate import evaluate, print_report
 from src.models import build_candidates
-from src.prepare import load_dataset, split_features_target, train_test
+from src.prepare import prepare_splits
 
 
 def choose_threshold(y_true, y_score, min_recall=None):
@@ -72,12 +72,8 @@ def run(config):
     model_name = config.get("model", "random_forest")
     min_recall = config.get("min_recall")
 
-    df = load_dataset(config)
-    X, y = split_features_target(df, config["target"], config["positive_label"], config.get("drop_columns"))
-    X_train, X_test, y_train, y_test = train_test(
-        X, y, config.get("test_size", 0.2), random_state
-    )
-    model = build_candidates(random_state)[model_name]
+    X_train, X_test, y_train, y_test = prepare_splits(config)
+    model = build_candidates(random_state, config.get("cleaning"))[model_name]
     out_dir = Path("reports") / config["name"]
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -97,6 +93,8 @@ def run(config):
 
     # ---- Part 2: unlock the test set, ONCE ----
     model.fit(X_train, y_train)
+    kept = len(model.named_steps["clean"].columns_)
+    print(f"Features kept after cleaning: {kept} of {X_train.shape[1]}")
     test_score = model.predict_proba(X_test)[:, 1]
 
     results = {

@@ -10,7 +10,7 @@ from sklearn.impute import SimpleImputer
 
 from src.config import load_config
 from src.evaluate import evaluate, print_report
-from src.prepare import load_dataset, split_features_target, train_test
+from src.prepare import prepare_splits
 
 
 def build_models(random_state):
@@ -28,13 +28,7 @@ def build_models(random_state):
 def run(config):
     random_state = config.get("random_state", 42)
 
-    df = load_dataset(config)
-    X, y = split_features_target(df, config["target"], config["positive_label"], config.get("drop_columns"))
-    X_train, X_test, y_train, y_test = train_test(
-        X, y, config.get("test_size", 0.2), random_state
-    )
-    print(f"Train: {len(X_train):,} rows ({y_train.sum()} failures)   "
-          f"Test: {len(X_test):,} rows ({y_test.sum()} failures)")
+    X_train, X_test, y_train, y_test = prepare_splits(config)
 
     results = {}
     for name, model in build_models(random_state).items():
