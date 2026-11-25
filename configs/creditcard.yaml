@@ -6,3 +6,5 @@ target: Class
 positive_label: 1     # the value in `target` that means "failure"
 test_size: 0.2        # 20% of rows held back for testing
 random_state: 42      # fixed seed so results are the same every run
+model: random_forest   # which model from src/models.py to use for the final evaluation
+min_recall: null       # null = maximise F1 (option A); e.g. 0.85 = recall target (option B)

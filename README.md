@@ -31,6 +31,7 @@ python -m src.ingest configs/creditcard.yaml          # CSV -> SQLite
 python -m src.explore configs/creditcard.yaml         # EDA reports in reports/creditcard/
 python -m src.train_baseline configs/creditcard.yaml  # baseline vs logistic regression
 python -m src.compare_models configs/creditcard.yaml  # 5-fold CV model comparison
+python -m src.final_evaluation configs/creditcard.yaml # tune cut-off on CV, then one-time test evaluation
 ```
 
 ## Results
@@ -56,6 +57,16 @@ Logistic regression caught 55 of 95 frauds with 10 false alarms; recall is the w
 | Random forest | 0.78 ± 0.07 | 0.94 ± 0.02 | 0.85 | 0.83 |
 | HistGradientBoosting (defaults) | 0.55 ± 0.14 | 0.47 ± 0.07 | 0.50 | 0.49 |
 
+### Stage 1: Final model (random forest, evaluated once on the held-out test set)
+Cut-off chosen by maximising F1 on out-of-fold training predictions (CV: precision 0.92, recall 0.81 at 0.40).
+
+| Cut-off | Precision | Recall | F1 | PR-AUC | Caught | False alarms |
+|---|---|---|---|---|---|---|
+| 0.50 (default) | 0.97 | 0.73 | 0.83 | 0.79 | 69 / 95 | 2 |
+| 0.40 (tuned) | 0.96 | 0.76 | 0.85 | 0.79 | 72 / 95 | 3 |
+
+![Precision-recall curve](reports/creditcard/pr_curve.png)
+
 ## Log: what broke / what changed
 
 ### Credit Card: exploration (Module 2)
@@ -78,3 +89,9 @@ Logistic regression caught 55 of 95 frauds with 10 false alarms; recall is the w
 - Random forest was best (PR-AUC 0.83, F1 0.85) → selected for threshold tuning.
 - HistGradientBoosting underperformed with high variance (PR-AUC 0.49 ± large spread). Disabling early stopping
   made it worse (0.35), so early stopping wasn't the cause. Not investigated further; possible next step is a lower learning rate.
+
+  ### Credit Card: threshold tuning + final test (Module 4B)
+- Cut-off chosen from out-of-fold probabilities on the training set, never from the test set.
+- Selection rule (max F1) fixed before looking at test results.
+- Tuned cut-off 0.40 caught 3 more frauds than the default 0.5 for 1 extra false alarm.
+- Test recall (0.76) slightly below CV recall (0.81), within the CV spread (±0.07) → CV estimate was reliable.
