@@ -1,6 +1,7 @@
 from sklearn.model_selection import train_test_split
 
 from src.ingest import read_from_sqlite
+from sklearn.model_selection import StratifiedKFold, TimeSeriesSplit
 import pandas as pd
 
 def load_dataset(config):
@@ -47,3 +48,13 @@ def prepare_splits(config):
     print(f"Split ({kind}): train {len(X_train):,} rows ({y_train.sum()} failures), "
           f"test {len(X_test):,} rows ({y_test.sum()} failures)")
     return X_train, X_test, y_train, y_test
+
+def make_cv(config):
+    """Time-ordered data -> each fold trains on the past and validates on the future.
+    Otherwise -> shuffled stratified folds."""
+    n_splits = config.get("cv_folds", 5)
+    if config.get("time_column"):
+        return TimeSeriesSplit(n_splits=n_splits)
+    return StratifiedKFold(
+        n_splits=n_splits, shuffle=True, random_state=config.get("random_state", 42)
+    )

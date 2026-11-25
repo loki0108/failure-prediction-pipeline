@@ -6,10 +6,11 @@ target: label
 positive_label: 1      # SECOM: 1 = fail, -1 = pass
 test_size: 0.2
 random_state: 42
-model: gradient_boosting
+model: logreg_balanced
 min_recall: null
 drop_columns: [timestamp]   # not a feature; kept in the data for time-based splitting later
 time_column: timestamp
 cleaning:
   max_missing: 0.5       # drop sensors more than 50% empty
   corr_threshold: 0.95   # drop one of each pair correlating above 0.95
+select_k: 30      # keep the 30 strongest sensors (chosen inside each CV fold)

@@ -88,6 +88,18 @@ Cut-off chosen by maximising F1 on out-of-fold training predictions (CV: precisi
 
 Random-guess PR-AUC ≈ 0.067. Best CV PR-AUC: gradient boosting 0.22, random forest 0.17, logistic regression ~0.16.
 
+### Stage 2: SECOM, final (cleaning + top-30 sensor selection + time-aware CV)
+Time-based split: trained on the earliest 1,254 runs (87 failures), tested on the latest 313 (17 failures).
+Model chosen by time-aware CV PR-AUC: logistic regression with class weighting (CV PR-AUC 0.12; all models 0.10–0.12).
+
+| Cut-off | Precision | Recall | PR-AUC | Caught | False alarms |
+|---|---|---|---|---|---|
+| 0.50 | 0.09 | 0.41 | 0.17 | 7 / 17 | 67 |
+| 0.745 (max F1 on CV) | 0.25 | 0.12 | 0.17 | 2 / 17 | 6 |
+
+Random-guess PR-AUC on this test set ≈ 0.054. Top sensors by selection score: sensor_59, 103, 431, 510, 430
+(full list: `reports/secom/selected_features.csv`).
+
 ## Log: what broke / what changed
 
 ### Credit Card: exploration (Module 2)
@@ -138,7 +150,7 @@ Random-guess PR-AUC ≈ 0.067. Best CV PR-AUC: gradient boosting 0.22, random fo
 - EDA: strongest single-sensor effect 0.62 (vs 7.9 on credit card): signal is weak and spread across many sensors.
   Some top-ranked sensors were 91% missing, so their effect scores are unreliable.
 
-  ### SECOM: cleaning + time-based split (Module 7)
+### SECOM: cleaning + time-based split (Module 7)
 - `SensorCleaner` (inside every pipeline, fit on training folds only) drops sensors >50% missing,
   constant sensors, and one of each pair correlated >0.95: 590 → 271 sensors.
 - Cleaning barely changed CV performance (gradient boosting PR-AUC 0.22 → 0.23); the useful cut-off stayed ~0.001.
@@ -146,3 +158,13 @@ Random-guess PR-AUC ≈ 0.067. Best CV PR-AUC: gradient boosting 0.22, random fo
   Shuffled CV estimated PR-AUC 0.23, but the future test set gave 0.076 (random ≈ 0.054): 3 of 17 failures caught, 40 false alarms.
   → Likely process drift; shuffled CV is optimistic because it mixes later runs into training.
   Next: time-aware CV for model selection.
+
+### SECOM: time-aware CV + feature selection (Module 8)
+- Replaced shuffled CV with TimeSeriesSplit for time-ordered data (each fold trains on the past, validates on the future).
+  CV PR-AUC dropped from 0.23 to ~0.12, much closer to real future performance.
+- `cross_val_predict` doesn't support TimeSeriesSplit (earliest block is never validated) → wrote a manual out-of-fold loop.
+- Added SelectKBest (top 30 sensors, inside the pipeline) and a more regularized logistic regression.
+- Future test PR-AUC improved from 0.076 to 0.17 (≈3× random). Fewer features + a simpler model reduced overfitting.
+- The max-F1 cut-off (0.745) caught 2/17 with 6 false alarms; 0.5 caught 7/17 with 67. Choice depends on the cost of a
+  missed defect vs an extra inspection. Both reported; the cut-off was not changed after seeing test results.
+- Top selected sensor (sensor_59) was also the strongest in EDA; sensors 103, 431, 510 appear in both rankings.

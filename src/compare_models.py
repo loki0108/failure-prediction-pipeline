@@ -8,7 +8,7 @@ from sklearn.metrics import make_scorer, precision_score, f1_score
 
 from src.config import load_config
 from src.models import build_candidates
-from src.prepare import prepare_splits
+from src.prepare import make_cv, prepare_splits
 
 SCORING = {
     "precision": make_scorer(precision_score, zero_division=0),
@@ -23,12 +23,10 @@ def run(config):
 
     X_train, X_test, y_train, y_test = prepare_splits(config)
 
-    cv = StratifiedKFold(
-        n_splits=config.get("cv_folds", 5), shuffle=True, random_state=random_state
-    )
+    cv = make_cv(config)
 
     rows = []
-    for name, model in build_candidates(random_state, config.get("cleaning")).items():
+    for name, model in build_candidates(random_state, config.get("cleaning"), config.get("select_k")).items():
         start = time.time()
         scores = cross_validate(model, X_train, y_train, cv=cv, scoring=SCORING)
 
